@@ -28,3 +28,4 @@ bool is_valid_measurement(double measurement)
 {
     return measurement >= V_LOWER_BOUND && measurement <= V_UPPER_BOUND;
 }
+
