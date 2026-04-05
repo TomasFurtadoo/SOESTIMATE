@@ -1,0 +1,1 @@
+ficheiro de apoio apenas para a pasta obj ter conteudo e aparecer no repositorio remoto
