@@ -11,7 +11,7 @@ obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJ)/*.o *~
+	rm -f $(OBJS)/*.o *~
 
 cleanall: clean
 	rm -f $(BIN)/SOestimate
