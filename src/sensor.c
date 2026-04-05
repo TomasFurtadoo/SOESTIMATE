@@ -9,11 +9,11 @@ int execute_sensor(int sensor_id, struct info_container *info, struct buffers *b
     int expected_m_id = 1;
     while(!*info->terminate){
         MeasurementInfo req;
-        sensor_receive_request(&req, expected_m_id, info, *buffs);
+        sensor_receive_request(&req, expected_m_id, info, buffs);
 
         if(req.m_id != -1){
-            sensor_process_request(&req, sensor_id, *info);
-            sensor_send_measurement(&req, *info, *buffs);
+            sensor_process_request(&req, sensor_id, info);
+            sensor_send_measurement(&req, info, buffs);
             expected_m_id++;
         }
     }
