@@ -21,7 +21,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
     if(pid == 0) {
         int exit_status = 0;
 
-        switch (type)  {
+        switch (process_type)  {
             case SENSOR_PROCESS:
                 exit_status = execute_process(process_id, info, buffs);
                 break;
@@ -47,7 +47,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
 }
 
 
-int wait_process(int process_id); {
+int wait_process(int process_id) {
     int status;
 
     if(waitpid(process_id, &status, 0) == -1) {
