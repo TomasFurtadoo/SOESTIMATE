@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "main.h"
 
 void main_args(int argc, char *argv[], struct info_container *info){
     if(argc != 4){
@@ -11,6 +12,10 @@ void create_dynamic_memory_structs(struct info_container *info, struct buffers *
 }
 
 void create_shared_memory_structs(struct info_container *info, struct buffers *buffs){
+
+    info->terminate = create_dynamic_memory_structs("shm_terminate", sizeOf(int));
+
+    info->sensors_pids = create_dynamic_memory_structs("shm_sensors_pids", info->n_sensors * sizeof(int));
 
 }
 
