@@ -13,9 +13,15 @@ void create_dynamic_memory_structs(struct info_container *info, struct buffers *
 
 void create_shared_memory_structs(struct info_container *info, struct buffers *buffs){
 
-    info->terminate = create_dynamic_memory_structs("shm_terminate", sizeOf(int));
-
-    info->sensors_pids = create_dynamic_memory_structs("shm_sensors_pids", info->n_sensors * sizeof(int));
+    iinfo->num_generated_measurements = create_shared_memory("shm_gen", info->n_sensors * sizeof(int));
+    info->num_invalid_measurements = create_shared_memory("shm_inv", info->n_sensors * sizeof(int));
+    info->num_estimates = create_shared_memory("shm_est", info->n_servers * sizeof(int));
+    info->total_measurements = create_shared_memory("shm_total", sizeof(int));
+    info->terminate = create_shared_memory("shm_terminate", sizeof(int));
+    
+    buffs->main_sensor_buffer = create_shared_memory("shm_main_buff", sizeof(struct circ_buffer));
+    buffs->main_sensor_buffer->buffer = create_shared_memory("shm_main_data", info->buffers_size * sizeof(MeasurementInfo));
+    buffs->main_sensor_buffer->ptrs = create_shared_memory("shm_main_ptrs", sizeof(struct shared_pointers));
 
 }
 
