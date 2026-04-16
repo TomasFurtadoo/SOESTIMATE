@@ -31,6 +31,8 @@ void sensor_process_request(MeasurementInfo *m, int sensor_id, struct info_conta
     m->value = get_measurement();
     m->state = MEASURED;
 
+    m->counter_servers = info->n_servers;
+
     info->num_generated_measurements[sensor_id]++;
 }
 

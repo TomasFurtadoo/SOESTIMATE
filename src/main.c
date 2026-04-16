@@ -15,8 +15,8 @@ void main_args(int argc, char *argv[], struct info_container *info){
     if(atoi(argv[1]) <= 0 || atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0){
         fprintf(stderr, "Argumentos invalidos. n_sensors, n_servers e buff_size devem ser inteiros positivos.\n");
         exit(1);
-
     }
+    
     info->n_sensors = atoi(argv[1]);
     info->n_servers = atoi(argv[2]);
     info->buffers_size = atoi(argv[3]);
@@ -48,11 +48,13 @@ void create_shared_memory_structs(struct info_container *info, struct buffers *b
     buffs->buff_main_sensors->ptrs   = (struct pointers*) create_shared_memory(ID_SHM_MAIN_SENSORS_PTR, sizeof(struct pointers));
     buffs->buff_main_sensors->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_MAIN_SENSORS_BUFFER, info->buffers_size * sizeof(MeasurementInfo));
 
-    buffs->buff_sensors_controllers->ptrs   = (int*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, info->buffers_size * sizeof(int));
-    buffs->buff_sensors_controllers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, info->buffers_size * sizeof(MeasurementInfo));
+    // Buffer Sensors->Controllers (RA: n_sensors * buffers_size)
+    buffs->buff_sensors_controllers->ptrs   = (int*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, info->n_sensors * sizeof(int));
+    buffs->buff_sensors_controllers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
-    buffs->buff_controllers_servers->ptrs   = (int*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, info->buffers_size * sizeof(int));
-    buffs->buff_controllers_servers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, info->buffers_size * sizeof(MeasurementInfo));
+    // Buffer Controllers->Servers (RA: n_sensors * buffers_size)
+    buffs->buff_controllers_servers->ptrs   = (int*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, info->n_sensors * sizeof(int));
+    buffs->buff_controllers_servers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
 }
 
@@ -78,12 +80,11 @@ void destroy_shared_memory_structs(struct info_container *info, struct buffers *
     destroy_shared_memory(ID_SHM_MAIN_SENSORS_PTR, buffs->buff_main_sensors->ptrs, sizeof(struct pointers));
     destroy_shared_memory(ID_SHM_MAIN_SENSORS_BUFFER, buffs->buff_main_sensors->buffer, info->buffers_size * sizeof(MeasurementInfo));
 
-    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, buffs->buff_sensors_controllers->ptrs, info->buffers_size * sizeof(int));
-    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, buffs->buff_sensors_controllers->buffer, info->buffers_size * sizeof(MeasurementInfo));
+    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, buffs->buff_sensors_controllers->ptrs, info->n_sensors * sizeof(int));
+    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, buffs->buff_sensors_controllers->buffer, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
-    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, buffs->buff_controllers_servers->ptrs, info->buffers_size * sizeof(int));
-    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, buffs->buff_controllers_servers->buffer, info->buffers_size * sizeof(MeasurementInfo));
-
+    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, buffs->buff_controllers_servers->ptrs, info->n_sensors * sizeof(int));
+    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, buffs->buff_controllers_servers->buffer, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 }
 
 void create_processes(struct info_container *info, struct buffers *buffs){
@@ -118,6 +119,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 
             if (strcmp(command, "measure") == 0) {
                 MeasurementInfo req;
+                memset(&req, 0, sizeof(MeasurementInfo));
                 req.state = REQUEST;
                 req.m_id = (*info->total_measurements) + 1; 
                 
@@ -128,6 +130,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
                 if (write_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, &req)) {
                     printf("Ronda de medicao %d iniciada.\n", current_m_id);
                     (*info->total_measurements)++; 
+                    current_m_id++;
                 } else {
                     printf("Erro: Buffer circular cheio.\n");
                 }
