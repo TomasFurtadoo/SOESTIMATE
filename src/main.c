@@ -3,6 +3,8 @@
 #include "memory.h"
 #include "main.h"
 #include "process.h"
+#include <string.h>
+#include <unistd.h>
 
 void main_args(int argc, char *argv[], struct info_container *info){
     if(argc != 4){
@@ -14,7 +16,11 @@ void main_args(int argc, char *argv[], struct info_container *info){
     info->n_servers = atoi(argv[2]);
     info->buffers_size = atoi(argv[3]);
 
-    if(info->n_sensors == 0 || info->n_servers == 0 || info->buffers_size)
+    if(info->n_sensors <= 0 || info->n_servers <= 0 || info->buffers_size <= 0){
+        fprintf(stderr, "Argumentos invalidos. n_sensors, n_servers e buff_size devem ser inteiros positivos.\n");
+        exit(1);
+
+    }
 
 }
 
@@ -113,7 +119,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
             if (strcmp(command, "measure") == 0) {
                 MeasurementInfo req;
                 req.state = REQUEST;
-                req.m_id = current_m_id; 
+                req.m_id = (*info->total_measurements) + 1; 
                 
 
                 req.counter_sensors = info->n_sensors;
@@ -121,7 +127,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 
                 if (write_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, &req)) {
                     printf("Ronda de medicao %d iniciada.\n", current_m_id);
-                    current_m_id++; 
+                    (*info->total_measurements)++; 
                 } else {
                     printf("Erro: Buffer circular cheio.\n");
                 }
@@ -152,29 +158,139 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 }
 
 void write_final_statistics(struct info_container *info){
+    printf("\n--- ESTATISTICAS FINAIS SOestimate ---\n");
+    printf("Configuracao: %d Sensores | %d Servidores | Buffer: %d\n", 
+            info->n_sensors, info->n_servers, info->buffers_size);
+    
+    printf("\nSensores:\n");
+    for(int i = 0; i < info->n_sensors; i++) {
+        printf("  Sensor %d (PID %d): %d geradas, %d invalidas\n", 
+                i, info->sensors_pids[i], 
+                info->num_generated_measurements[i], 
+                info->num_invalid_measurements[i]);
+    }
+
+    printf("\nServidores:\n");
+    for(int i = 0; i < info->n_servers; i++) {
+        printf("  Server %d (PID %d): %d estimativas calculadas\n", 
+                i, info->servers_pids[i], info->num_estimates[i]);
+    }
+
+    printf("\nTotal de rondas solicitadas: %d\n", *info->total_measurements);
+    printf("---------------------------------------\n");
     
 }
 
 void end_execution(struct info_container *info, struct buffers *buffs){
+    *info->terminate = 1;
+
+    wait_processes(info);
+
+    write_final_statistics(info);
 
 }
 
 void wait_processes(struct info_container *info){
 
+    for(int i = 0; i < info->n_sensors; i++) {
+        wait_process(info->sensors_pids[i]);
+    }
+
+    for(int i = 0; i < info->n_sensors; i++) {
+        wait_process(info->controllers_pids[i]);
+    }
+
+    for(int i = 0; i < info->n_servers; i++) {
+        wait_process(info->servers_pids[i]);
+    }
+    printf("Todos os processos terminados com sucesso.\n");
+
 }
 
 void read_estimate(struct info_container *info, int m_id){
+  
+    if (m_id <= 0 || m_id > *info->total_measurements) {
+        printf("Erro: Identificador de ronda %d e invalido ou ainda nao foi processado.\n", m_id); 
+        return;
+    }
+
+    printf("Operacao 'read %d': A leitura do ficheiro de log sera implementada apenas na 2a Fase.\n", m_id); 
 
 }
 
 void print_stat(struct info_container *info){
 
+    printf("\n======= ESTADO ATUAL DO SISTEMA (STAT) =======\n");
+    printf("Configuracao:\n");
+    printf("  N. Sensores: %d | N. Servidores: %d | Tamanho Buffers: %d\n", 
+            info->n_sensors, info->n_servers, info->buffers_size); 
+
+    printf("\nProcessos (PIDs):\n");
+    printf("  Main PID: %d\n", getpid()); 
+    
+    printf("  Sensores:     ");
+    for(int i = 0; i < info->n_sensors; i++) printf("%d ", info->sensors_pids[i]);
+    
+    printf("\n  Controladores:");
+    for(int i = 0; i < info->n_sensors; i++) printf("%d ", info->controllers_pids[i]);
+    
+    printf("\n  Servidores:   ");
+    for(int i = 0; i < info->n_servers; i++) printf("%d ", info->servers_pids[i]); 
+
+    printf("\n\nContadores em Memoria Partilhada:\n");
+    printf("  Rondas de medicao solicitadas: %d\n", *info->total_measurements); 
+    printf("  Flag Terminate: %d\n", *info->terminate);
+    
+    printf("\nEstatisticas por Entidade:\n");
+    for(int i = 0; i < info->n_sensors; i++) {
+        printf("  [S%d] Geradas: %d | Invalidas: %d\n", 
+                i, info->num_generated_measurements[i], info->num_invalid_measurements[i]);
+    }
+    for(int i = 0; i < info->n_servers; i++) {
+        printf("  [SRV%d] Estimativas: %d\n", i, info->num_estimates[i]);
+    }
+    printf("==============================================\n");
+
 }
 
 void help(void){
+    printf("\nComandos disponiveis:\n");
+    printf("  measure  - Solicita uma nova ronda de medicao (mid++) \n");
+    printf("  read <j> - Le a estimativa da ronda j (Fase 2) \n");
+    printf("  stat     - Mostra o estado atual do sistema \n");
+    printf("  help     - Mostra este menu de ajuda \n");
+    printf("  end      - Termina a execucao do sistema \n\n");
 
 }
 
 int main(int argc, char *argv[]){
+
+
+    struct info_container* info = (struct info_container*) allocate_dynamic_memory(sizeof(struct info_container));
+    struct buffers* buffs = (struct buffers*) allocate_dynamic_memory(sizeof(struct buffers));
+
+
+    main_args(argc, argv, info);
+
+
+    create_dynamic_memory_structs(info, buffs);
+    create_shared_memory_structs(info, buffs);
+
+
+    create_processes(info, buffs);
+
+
+    user_interaction(info, buffs);
+
+
+    end_execution(info, buffs);
+
+ 
+    destroy_shared_memory_structs(info, buffs);
+    destroy_dynamic_memory_structs(info, buffs);
+
+    deallocate_dynamic_memory(info);
+    deallocate_dynamic_memory(buffs);
+
     return 0;
 }
