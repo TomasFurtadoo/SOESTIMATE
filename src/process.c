@@ -23,7 +23,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
 
         switch (process_type)  {
             case SENSOR_PROCESS:
-                exit_status = execute_process(process_id, info, buffs);
+                exit_status = execute_sensor(process_id, info, buffs);
                 break;
             
             case CONTROLLER_PROCESS:

@@ -11,16 +11,16 @@ void main_args(int argc, char *argv[], struct info_container *info){
         fprintf(stderr, "Argumentos invalidos.\n Uso: ./SOestimate n_sensors n_servers buff_size\n");
         exit(1);
     }
-
-    info->n_sensors = atoi(argv[1]);
-    info->n_servers = atoi(argv[2]);
-    info->buffers_size = atoi(argv[3]);
-
-    if(info->n_sensors <= 0 || info->n_servers <= 0 || info->buffers_size <= 0){
+    
+    if(atoi(argv[1]) <= 0 || atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0){
         fprintf(stderr, "Argumentos invalidos. n_sensors, n_servers e buff_size devem ser inteiros positivos.\n");
         exit(1);
 
     }
+    info->n_sensors = atoi(argv[1]);
+    info->n_servers = atoi(argv[2]);
+    info->buffers_size = atoi(argv[3]);
+
 
 }
 

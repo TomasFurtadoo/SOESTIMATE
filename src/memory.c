@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "inc/memory.h"
+#include "memory.h"
 
 
 void *allocate_dynamic_memory(int size){
