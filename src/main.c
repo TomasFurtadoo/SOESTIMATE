@@ -161,26 +161,21 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 }
 
 void write_final_statistics(struct info_container *info){
-    printf("\n--- ESTATISTICAS FINAIS SOestimate ---\n");
-    printf("Configuracao: %d Sensores | %d Servidores | Buffer: %d\n", 
-            info->n_sensors, info->n_servers, info->buffers_size);
+    printf("[Main] Final SOestimate statistics:\n"); // [cite: 3]
     
-    printf("\nSensores:\n");
+    // Total global de medições solicitadas
+    printf("[Main] Total generated measurements: %d\n", *info->total_measurements); // [cite: 3]
+
+    // Estatísticas por Sensor
     for(int i = 0; i < info->n_sensors; i++) {
-        printf("  Sensor %d (PID %d): %d geradas, %d invalidas\n", 
-                i, info->sensors_pids[i], 
-                info->num_generated_measurements[i], 
-                info->num_invalid_measurements[i]);
+        printf("[Main] Sensor %d generated %d measurements (%d invalid after validation).\n", 
+                i, info->num_generated_measurements[i], info->num_invalid_measurements[i]); // [cite: 3]
     }
 
-    printf("\nServidores:\n");
+    // Estatísticas por Servidor
     for(int i = 0; i < info->n_servers; i++) {
-        printf("  Server %d (PID %d): %d estimativas calculadas\n", 
-                i, info->servers_pids[i], info->num_estimates[i]);
+        printf("[Main] Server %d computed %d estimates.\n", i, info->num_estimates[i]); // [cite: 4]
     }
-
-    printf("\nTotal de rondas solicitadas: %d\n", *info->total_measurements);
-    printf("---------------------------------------\n");
     
 }
 
@@ -211,58 +206,50 @@ void wait_processes(struct info_container *info){
 }
 
 void read_estimate(struct info_container *info, int m_id){
-  
-    if (m_id <= 0 || m_id > *info->total_measurements) {
-        printf("Erro: Identificador de ronda %d e invalido ou ainda nao foi processado.\n", m_id); 
-        return;
-    }
-
-    printf("Operacao 'read %d': A leitura do ficheiro de log sera implementada apenas na 2a Fase.\n", m_id); 
+    printf("[Main] Unimplemented command (P2-only).\n");
 
 }
 
 void print_stat(struct info_container *info){
-
-    printf("\n======= ESTADO ATUAL DO SISTEMA (STAT) =======\n");
-    printf("Configuracao:\n");
-    printf("  N. Sensores: %d | N. Servidores: %d | Tamanho Buffers: %d\n", 
+    // Cabeçalho e Configuração baseados nas strings do SOestimate_profs
+    printf("[Main] Current SOestimate state:\n");
+    printf("[Main] n_sensors=%d, n_servers=%d, buffers_size=%d\n", 
             info->n_sensors, info->n_servers, info->buffers_size); 
 
-    printf("\nProcessos (PIDs):\n");
-    printf("  Main PID: %d\n", getpid()); 
-    
-    printf("  Sensores:     ");
-    for(int i = 0; i < info->n_sensors; i++) printf("%d ", info->sensors_pids[i]);
-    
-    printf("\n  Controladores:");
-    for(int i = 0; i < info->n_sensors; i++) printf("%d ", info->controllers_pids[i]);
-    
-    printf("\n  Servidores:   ");
-    for(int i = 0; i < info->n_servers; i++) printf("%d ", info->servers_pids[i]); 
+    // Estado global
+    printf("[Main] terminate=%d, total_measurements=%d\n", 
+            *info->terminate, *info->total_measurements);
 
-    printf("\n\nContadores em Memoria Partilhada:\n");
-    printf("  Rondas de medicao solicitadas: %d\n", *info->total_measurements); 
-    printf("  Flag Terminate: %d\n", *info->terminate);
-    
-    printf("\nEstatisticas por Entidade:\n");
+    // Secção de Sensores
+    printf("[Main] Sensors:\n");
     for(int i = 0; i < info->n_sensors; i++) {
-        printf("  [S%d] Geradas: %d | Invalidas: %d\n", 
-                i, info->num_generated_measurements[i], info->num_invalid_measurements[i]);
+        printf("[Main]  sensor=%d pid=%d generated=%d\n",
+                i, info->sensors_pids[i], info->num_generated_measurements[i]);
     }
+
+    // Secção de Controladores (Apenas PIDs conforme as strings de referência)
+    printf("[Main] Controllers:\n");
+    for(int i = 0; i < info->n_sensors; i++) {
+        printf("[Main]  controller=%d pid=%d\n",
+                i, info->controllers_pids[i]);
+    }
+
+    // Secção de Servidores
+    printf("[Main] Servers:\n");
     for(int i = 0; i < info->n_servers; i++) {
-        printf("  [SRV%d] Estimativas: %d\n", i, info->num_estimates[i]);
+        printf("[Main]  server=%d pid=%d estimates=%d\n",
+                i, info->servers_pids[i], info->num_estimates[i]);
     }
-    printf("==============================================\n");
 
 }
 
 void help(void){
-    printf("\nComandos disponiveis:\n");
-    printf("  measure  - Solicita uma nova ronda de medicao (mid++) \n");
-    printf("  read <j> - Le a estimativa da ronda j (Fase 2) \n");
-    printf("  stat     - Mostra o estado atual do sistema \n");
-    printf("  help     - Mostra este menu de ajuda \n");
-    printf("  end      - Termina a execucao do sistema \n\n");
+    printf("[Main] Available operations:\n"); // 
+    printf("[Main]  measure - start a measurement cycle with one measurement per sensor.\n"); // [cite: 4]
+    printf("[Main]  read <cycle_id> - read the estimate for a cycle.\n"); // [cite: 5]
+    printf("[Main]  stat - print the current system state.\n"); // [cite: 5]
+    printf("[Main]  help - show this menu.\n"); // 
+    printf("[Main]  end - terminate SOestimate.\n"); //
 
 }
 

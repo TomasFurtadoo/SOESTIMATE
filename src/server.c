@@ -82,10 +82,13 @@ int server_process_measurement(MeasurementInfo *m, int server_id, struct info_co
 }
 
 void server_print_estimate(int server_id, int m_id, double estimate, int valid_count){
-    if(valid_count == 0){
-        printf("Warning: No valid data available\n");
+    if(valid_count == 0) {
+        // Mensagem quando não há dados válidos para a média
+        printf("[Server %d] Cycle %d all measurements were invalid\n", server_id, m_id); // 
     }
-    else{
-        printf("Server[%d]: Measurament[%d] - Estimate: [%.2f] (based on [%d] valid measurements)\n", server_id, m_id, estimate, valid_count);
+    else {
+        // Mensagem de sucesso com a estimativa formatada com 4 casas decimais
+        printf("[Server %d] New estimate: cycle %d = %.4f (valid_count=%d)\n", 
+                server_id, m_id, estimate, valid_count); // 
     }
 }
