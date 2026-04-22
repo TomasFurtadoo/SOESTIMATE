@@ -1,3 +1,10 @@
+/*
+Grupo Numero 24
+Bernardo Palma - 63756
+Dinis Raposo - 63776
+Tomas Furtado - 63772
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "memory.h"

@@ -1,3 +1,10 @@
+/*
+Grupo Numero 24
+Bernardo Palma - 63756
+Dinis Raposo - 63776
+Tomas Furtado - 63772
+*/
+
 #include <stdlib.h>
 #include <time.h>
 #include "random_measurement.h"
