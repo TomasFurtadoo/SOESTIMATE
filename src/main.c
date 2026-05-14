@@ -12,6 +12,8 @@ Tomas Furtado - 63772
 #include "process.h"
 #include <string.h>
 #include <unistd.h>
+#include "csettings.h"
+#include "synchronization.h"
 
 void main_args(int argc, char *argv[], struct info_container *info){
     if(argc != 4){
