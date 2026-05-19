@@ -16,20 +16,13 @@ Tomas Furtado - 63772
 #include "synchronization.h"
 
 void main_args(int argc, char *argv[], struct info_container *info){
-    if(argc != 4){
-        fprintf(stderr, "Argumentos invalidos.\n Uso: ./SOestimate n_sensors n_servers buff_size\n");
+    if(argc != 3){
+        fprintf(stderr, "Argumentos invalidos.\n Uso: ./SOestimate <ficheiro_args> <ficheiro_settings>\n");
         exit(1);
     }
     
-    if(atoi(argv[1]) <= 0 || atoi(argv[2]) <= 0 || atoi(argv[3]) <= 0){
-        fprintf(stderr, "Argumentos invalidos. n_sensors, n_servers e buff_size devem ser inteiros positivos.\n");
-        exit(1);
-    }
-    
-    info->n_sensors = atoi(argv[1]);
-    info->n_servers = atoi(argv[2]);
-    info->buffers_size = atoi(argv[3]);
-
+    read_arguments_file(argv[1], info);
+    read_settings_file(argv[2], info);
 
 }
 

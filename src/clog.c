@@ -1,9 +1,14 @@
-#include "clog.h"
-#include <stdio.h>
 
+#include "clog.h"
+#include "main.h"
+#include "memory.h"
+#include "ctime.h"
+#include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
 
 void log_operation(char *operation, struct info_container *info) {
-    sem_wait(&info->log_mutex);
+    sem_wait(info->sems->log_mutex);
     FILE *f = fopen(info->log_filename, "a");
     if (f) {
         struct timespec ts;
