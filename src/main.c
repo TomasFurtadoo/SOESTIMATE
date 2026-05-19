@@ -15,6 +15,9 @@ Tomas Furtado - 63772
 #include "csettings.h"
 #include "synchronization.h"
 
+struct info_container *info = NULL;
+struct bufferes *buffs = NULL;
+
 void main_args(int argc, char *argv[], struct info_container *info){
     if(argc != 3){
         fprintf(stderr, "Argumentos invalidos.\n Uso: ./SOestimate <ficheiro_args> <ficheiro_settings>\n");
@@ -198,7 +201,7 @@ void wait_processes(struct info_container *info){
 
     for(int i = 0; i < info->n_sensors; i++) {
         wait_process(info->controllers_pids[i]);
-    }
+    }   
 
     for(int i = 0; i < info->n_servers; i++) {
         wait_process(info->servers_pids[i]);
@@ -258,8 +261,8 @@ void help(void){
 int main(int argc, char *argv[]){
 
 
-    struct info_container* info = (struct info_container*) allocate_dynamic_memory(sizeof(struct info_container));
-    struct buffers* buffs = (struct buffers*) allocate_dynamic_memory(sizeof(struct buffers));
+    info = (struct info_container*) allocate_dynamic_memory(sizeof(struct info_container));
+    buffs = (struct buffers*) allocate_dynamic_memory(sizeof(struct buffers));
 
 
     main_args(argc, argv, info);
