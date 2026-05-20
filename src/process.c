@@ -9,6 +9,7 @@ Tomas Furtado - 63772
 #include "sensor.h"
 #include "controller.h"
 #include "server.h"
+#include "csignal.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,7 @@ int launch_process(enum process_type process_type, int process_id, struct info_c
     }
 
     if(pid == 0) {
+        ignore_signals();
         int exit_status = 0;
 
         switch (process_type)  {

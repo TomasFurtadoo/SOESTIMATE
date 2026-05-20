@@ -17,6 +17,7 @@ Tomas Furtado - 63772
 #include "csignal.h"
 #include "cstats.h"
 #include "clog.h"
+#include "ctime.h"
 
 struct info_container *info = NULL;
 struct buffers *buffs = NULL;
@@ -133,7 +134,9 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
                 print_prompt = 0;
                 continue;
             }
-            else break;
+            else{
+                break;
+            }
         }
         print_prompt = 1;
 
@@ -310,10 +313,7 @@ int main(int argc, char *argv[]){
     setup_alarm(info->period);
 
     user_interaction(info, buffs);
-
-    if(*info->terminate == 0){
-        end_execution(info, buffs);
-    }
+    end_execution(info, buffs);
 
  
     destroy_shared_memory_structs(info, buffs);

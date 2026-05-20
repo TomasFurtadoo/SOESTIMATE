@@ -9,12 +9,21 @@ Tomas Furtado - 63772
 #include "sensor.h"
 #include "memory.h"
 #include "random_measurement.h"
+#include <semaphore.h>
 
 
 int execute_sensor(int sensor_id, struct info_container *info, struct buffers *buffs){
     seed_sensor_rng(sensor_id);
     int expected_m_id = 1;
-    while(!*info->terminate){
+
+    while(1){
+        sem_wait(info->sems->terminate_mutex);
+        if(*info->terminate) {
+            sem_post(info->sems->terminate_mutex);
+            break;
+        }
+        sem_post(info->sems->terminate_mutex);
+    
         MeasurementInfo req;
         sensor_receive_request(&req, expected_m_id, info, buffs);
 
@@ -29,7 +38,17 @@ int execute_sensor(int sensor_id, struct info_container *info, struct buffers *b
 
 
 void sensor_receive_request(MeasurementInfo *req, int expected_m_id, struct info_container *info, struct buffers *buffs){
+    sem_wait(info->sems->main_sensors->unread);
+
+    if(*info->terminate) return;
+
+    sem_wait(info->sems->main_sensors->mutex);
     read_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, expected_m_id, req);
+    sem_post(info->sems->main_sensors->mutex);
+
+    if(req->m_id != -1) {
+        sem_post(info->sems->main_sensors->free_space);
+    }
 }
 
 
@@ -44,9 +63,9 @@ void sensor_process_request(MeasurementInfo *m, int sensor_id, struct info_conta
 }
 
 void sensor_send_measurement(MeasurementInfo *m, struct info_container *info, struct buffers *buffs){
-    while(!write_sensor_controller_buffer(buffs->buff_sensors_controllers, info->buffers_size, m)){
-        if(*info->terminate){
-            return;
-        }
-    }
+    sem_wait(info->sems->sensors_controllers->free_space);
+    sem_wait(info->sems->sensors_controllers->mutex);
+    write_sensor_controller_buffer(buffs->buff_sensors_controllers, info->buffers_size, m);
+    sem_post(info->sems->sensors_controllers->mutex);
+    sem_post(info->sems->sensors_controllers->unread);
 }

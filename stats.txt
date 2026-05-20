@@ -1,0 +1,15 @@
+===== FINAL STATISTICS =====
+Main PID: 44259
+n_sensors=2, n_servers=2, buffers_size=10
+total_measurements=2
+Sensors:
+ Sensor 0 (PID 44260): generated=1
+ Sensor 1 (PID 44262): generated=1
+Controllers:
+controller=0 pid=44261
+controller=1 pid=44263
+Servers:
+ Server 0 (PID 44264): estimates=0
+ Server 1 (PID 44265): estimates=0
+Last logged ID: 0
+============================

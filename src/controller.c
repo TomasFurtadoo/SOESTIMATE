@@ -10,12 +10,20 @@ Tomas Furtado - 63772
 #include "main.h"
 #include "controller.h"
 #include "random_measurement.h"
+#include <semaphore.h>
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs){
 
     int expected_m_id = 1;
 
-    while(!*info->terminate){
+    while(1){
+        sem_wait(info->sems->terminate_mutex);
+        if(*info->terminate) {
+            sem_post(info->sems->terminate_mutex);
+            break;
+        }
+        sem_post(info->sems->terminate_mutex);
+
         MeasurementInfo req;
         controller_receive_measurement(&req, controller_id, info, buffs);
         if(req.m_id == expected_m_id){
@@ -28,7 +36,15 @@ int execute_controller(int controller_id, struct info_container *info, struct bu
 }
 
 void controller_receive_measurement(MeasurementInfo *m, int controller_id, struct info_container *info, struct buffers *buffs){
+    m->m_id = -1;
+    sem_wait(info->sems->sensors_controllers->unread);
+    
+    if(*info->terminate) return;
+
+    sem_wait(info->sems->sensors_controllers->mutex);
     read_sensor_controller_buffer(buffs->buff_sensors_controllers, controller_id, info->buffers_size, m);
+    sem_post(info->sems->sensors_controllers->mutex);
+    sem_post(info->sems->sensors_controllers->free_space);
 }
 
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info){
@@ -42,9 +58,10 @@ void controller_process_measurement(MeasurementInfo *m, int controller_id, struc
 }
 
 void controller_send_measurement(MeasurementInfo *m, struct info_container *info, struct buffers *buffs){
-    while(!write_controller_servers_buffer(buffs->buff_controllers_servers, info->buffers_size, m))
-        if(*info->terminate){
-            return;
-        }
+    sem_wait(info->sems->controllers_servers->free_space);
+    sem_wait(info->sems->controllers_servers->mutex);
+    write_controller_servers_buffer(buffs->buff_controllers_servers, info->buffers_size, m);
+    sem_post(info->sems->controllers_servers->mutex);
+    sem_post(info->sems->controllers_servers->unread);
 
 }
