@@ -46,7 +46,7 @@ void sensor_receive_request(MeasurementInfo *req, int expected_m_id, struct info
     read_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, expected_m_id, req);
     sem_post(info->sems->main_sensors->mutex);
 
-    if(req->m_id != -1) {
+    if(req->m_id != -1 && req->counter_sensors == 0) {
         sem_post(info->sems->main_sensors->free_space);
     }
 }

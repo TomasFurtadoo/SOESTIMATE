@@ -34,6 +34,11 @@ int execute_server(int server_id, struct info_container *info, struct buffers *b
         }
         sem_post(info->sems->terminate_mutex);
 
+        if(expected_m_id % info->n_servers != server_id) {
+            expected_m_id++;
+            continue;
+        }
+
         estimate = 0;
         valid_count = 0;
         int received_count = 0;

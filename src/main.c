@@ -58,11 +58,11 @@ void create_shared_memory_structs(struct info_container *info, struct buffers *b
     buffs->buff_main_sensors->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_MAIN_SENSORS_BUFFER, info->buffers_size * sizeof(MeasurementInfo));
 
     // Buffer Sensors->Controllers (RA: n_sensors * buffers_size)
-    buffs->buff_sensors_controllers->ptrs   = (int*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, info->n_sensors * sizeof(int));
+    buffs->buff_sensors_controllers->ptrs   = (int*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, info->n_sensors * info->buffers_size * sizeof(int));
     buffs->buff_sensors_controllers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
     // Buffer Controllers->Servers (RA: n_sensors * buffers_size)
-    buffs->buff_controllers_servers->ptrs   = (int*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, info->n_sensors * sizeof(int));
+    buffs->buff_controllers_servers->ptrs   = (int*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, info->n_sensors * info->buffers_size * sizeof(int));
     buffs->buff_controllers_servers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
     info->last_logged_id = (int*) create_shared_memory(ID_SHM_LAST_LOGGED_ID, sizeof(int));
@@ -91,10 +91,10 @@ void destroy_shared_memory_structs(struct info_container *info, struct buffers *
     destroy_shared_memory(ID_SHM_MAIN_SENSORS_PTR, buffs->buff_main_sensors->ptrs, sizeof(struct pointers));
     destroy_shared_memory(ID_SHM_MAIN_SENSORS_BUFFER, buffs->buff_main_sensors->buffer, info->buffers_size * sizeof(MeasurementInfo));
 
-    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, buffs->buff_sensors_controllers->ptrs, info->n_sensors * sizeof(int));
+    destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_PTR, buffs->buff_sensors_controllers->ptrs, info->n_sensors *  info->buffers_size * sizeof(int));
     destroy_shared_memory(ID_SHM_SENSORS_CONTROLLERS_BUFFER, buffs->buff_sensors_controllers->buffer, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
-    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, buffs->buff_controllers_servers->ptrs, info->n_sensors * sizeof(int));
+    destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, buffs->buff_controllers_servers->ptrs, info->n_sensors * info->buffers_size * sizeof(int));
     destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, buffs->buff_controllers_servers->buffer, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
     destroy_shared_memory(ID_SHM_LAST_LOGGED_ID, info->last_logged_id, sizeof(int));
@@ -121,24 +121,18 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 
     int current_m_id = 1; 
 
-    int print_prompt = 1;
-
     while(!*info->terminate){
-        if(print_prompt){
-            printf("SOestimate> ");
-            fflush(stdout);
-        }
+        printf("SOestimate> ");
+        fflush(stdout);
         
         if (fgets(input, sizeof(input), stdin) == NULL){
             if(! *info->terminate) {
-                print_prompt = 0;
                 continue;
             }
             else{
                 break;
             }
         }
-        print_prompt = 1;
 
         int parsed_args = sscanf(input, "%255s %d", command, &arg);
 
@@ -155,11 +149,22 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
                 req.counter_sensors = info->n_sensors;
                 req.counter_servers = info->n_servers;
 
+                sem_wait(info->sems->main_sensors->free_space);
+                sem_wait(info->sems->main_sensors->mutex);
+
                 if (write_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, &req)) {
                     printf("Ronda de medicao %d iniciada.\n", current_m_id);
                     (*info->total_measurements)++; 
                     current_m_id++;
+
+                    sem_post(info->sems->main_sensors->mutex);
+
+                    for(int i = 0; i < info->n_sensors; i++){
+                        sem_post(info->sems->main_sensors->unread);
+                    }
                 } else {
+                    sem_post(info->sems->main_sensors->mutex);
+                    sem_post(info->sems->main_sensors->free_space);
                     printf("Erro: Buffer circular cheio.\n");
                 }
             } 
@@ -208,9 +213,9 @@ void write_final_statistics(struct info_container *info){
 }
 
 void end_execution(struct info_container *info, struct buffers *buffs){
-    static int alread_ending = 0;
-    if(alread_ending) return;
-    alread_ending = 1;
+    static int already_ending = 0;
+    if(already_ending) return;
+    already_ending = 1;
 
     *info->terminate = 1;
 

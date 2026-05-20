@@ -36,7 +36,7 @@ void alarm_handler(int signum){
     for(int i = 0; i < info->buffers_size; i++){
         
         MeasurementInfo *m = &buffs->buff_main_sensors->buffer[i];
-        if(m->m_id > 0){
+        if(m->m_id > 0 && m->counter_sensors > 0){
             double decorrido;
             if(m->change_time.server_time.tv_sec != 0){
                 decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
@@ -51,7 +51,7 @@ void alarm_handler(int signum){
     //sensors controllers
     for(int i = 0; i < info->n_sensors * info->buffers_size; i++){
         MeasurementInfo *m = &buffs->buff_sensors_controllers->buffer[i];
-        if(m->m_id > 0){
+        if(m->m_id > 0 && buffs->buff_sensors_controllers->ptrs[i] == 1){
             double decorrido;
             if(m->change_time.server_time.tv_sec != 0){
                 decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
@@ -66,7 +66,7 @@ void alarm_handler(int signum){
     //controllers servers
     for(int i = 0; i < info->n_sensors * info->buffers_size; i++){
         MeasurementInfo *m = &buffs->buff_controllers_servers->buffer[i];
-        if(m->m_id > 0){
+        if(m->m_id > 0 && buffs->buff_controllers_servers->ptrs[i] == 1){
             double decorrido;
             if(m->change_time.server_time.tv_sec != 0){
                 decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
