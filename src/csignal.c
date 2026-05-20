@@ -2,6 +2,7 @@
 #include "main.h"
 #include "csignal.h"
 #include <signal.h>
+#include "ctime.h"
 
 static void sigint_handler(int signum){
     end_execution(info, buffs);
@@ -26,7 +27,55 @@ void ignore_signals(void){
 }
 
 void alarm_handler(int signum){
-    
+    alarm(info->period);
+    struct timespec current_time = get_current_time();
+
+    //main sensors
+    for(int i = 0; i < info->buffers_size; i++){
+        
+        MeasurementInfo *m = &buffs->buff_main_sensors->buffer[i];
+        if(m->m_id > 0){
+            double decorrido;
+            if(m->change_time.server_time.tv_sec != 0){
+                decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
+            } 
+            else{
+                decorrido = elapsed_time(m->change_time.main_time, current_time);
+            }
+            printf("%d %.3f\n", m->m_id, decorrido);
+        }
+    }
+
+    //sensors controllers
+    for(int i = 0; i < info->n_sensors * info->buffers_size; i++){
+        MeasurementInfo *m = &buffs->buff_sensors_controllers->buffer[i];
+        if(m->m_id > 0){
+            double decorrido;
+            if(m->change_time.server_time.tv_sec != 0){
+                decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
+            }
+            else{
+                decorrido = elapsed_time(m->change_time.main_time, current_time);
+            }
+            printf("%d %.3f\n", m->m_id, decorrido);
+        }
+    }
+
+    //controllers servers
+    for(int i = 0; i < info->n_sensors * info->buffers_size; i++){
+        MeasurementInfo *m = &buffs->buff_controllers_servers->buffer[i];
+        if(m->m_id > 0){
+            double decorrido;
+            if(m->change_time.server_time.tv_sec != 0){
+                decorrido = elapsed_time(m->change_time.main_time, m->change_time.server_time);
+            }
+            else{
+                decorrido = elapsed_time(m->change_time.main_time, current_time);
+            }
+            printf("%d %.3f\n", m->m_id, decorrido);
+        }
+    }
+
 }
 
 void setup_alarm(int period){

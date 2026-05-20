@@ -14,9 +14,10 @@ Tomas Furtado - 63772
 #include <unistd.h>
 #include "csettings.h"
 #include "synchronization.h"
+#include "csignal.h"
 
 struct info_container *info = NULL;
-struct bufferes *buffs = NULL;
+struct buffers *buffs = NULL;
 
 void main_args(int argc, char *argv[], struct info_container *info){
     if(argc != 3){
@@ -271,9 +272,12 @@ int main(int argc, char *argv[]){
     create_dynamic_memory_structs(info, buffs);
     create_shared_memory_structs(info, buffs);
 
+    info->sems = create_all_semaphores(info->buffers_size);
 
     create_processes(info, buffs);
 
+    setup_sigint_handler();
+    setup_alarm(info->period);
 
     user_interaction(info, buffs);
 
@@ -283,6 +287,8 @@ int main(int argc, char *argv[]){
  
     destroy_shared_memory_structs(info, buffs);
     destroy_dynamic_memory_structs(info, buffs);
+
+    destroy_all_semaphores(info->sems);
 
     deallocate_dynamic_memory(info);
     deallocate_dynamic_memory(buffs);
