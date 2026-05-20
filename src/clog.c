@@ -26,21 +26,23 @@ void log_operation(char *operation, struct info_container *info) {
 
 void log_result (int server_id, struct MeasurementInfo *m, struct info_container *info){
     sem_wait(info ->sems->log_mutex);
-    FILE *f = fopen(info->log_filename, "a");
-    if (f) {
-        struct timespec ts;
-        ts = get_current_time();
-        struct tm *lt = localtime(&ts.tv_sec);
-
-        double elapsed = (ts.tv_sec - m->change_time.main_time.tv_sec) +
-                         (ts.tv_nsec - m->change_time.main_time.tv_nsec) / 1e9;
-
-        fprintf(f, "%04d%02d%02d %02d:%02d:%02d.%03ld result %d server %d estimate %.4f elapsed %.3f\n",
-                lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday,
-                lt->tm_hour, lt->tm_min, lt->tm_sec,
-                ts.tv_nsec / 1000000, m->m_id, server_id, m->value, elapsed);
-        fclose(f);
-        *info->last_logged_id = m->m_id;
+    if(m->m_id > *info->last_logged_id){
+        FILE *f = fopen(info->log_filename, "a");
+        if (f) {
+            struct timespec ts;
+            ts = get_current_time();
+            struct tm *lt = localtime(&ts.tv_sec);
+    
+            double elapsed = (ts.tv_sec - m->change_time.main_time.tv_sec) +
+                             (ts.tv_nsec - m->change_time.main_time.tv_nsec) / 1e9;
+    
+            fprintf(f, "%04d%02d%02d %02d:%02d:%02d.%03ld result %d server %d estimate %.4f elapsed %.3f\n",
+                    lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday,
+                    lt->tm_hour, lt->tm_min, lt->tm_sec,
+                    ts.tv_nsec / 1000000, m->m_id, server_id, m->value, elapsed);
+            fclose(f);
+            *info->last_logged_id = m->m_id;
+        }
     }
     sem_post(info->sems->log_mutex);
 }

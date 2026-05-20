@@ -11,6 +11,7 @@ Tomas Furtado - 63772
 #include "controller.h"
 #include "random_measurement.h"
 #include <semaphore.h>
+#include <unistd.h>
 
 int execute_controller(int controller_id, struct info_container *info, struct buffers *buffs){
 
@@ -44,7 +45,14 @@ void controller_receive_measurement(MeasurementInfo *m, int controller_id, struc
     sem_wait(info->sems->sensors_controllers->mutex);
     read_sensor_controller_buffer(buffs->buff_sensors_controllers, controller_id, info->buffers_size, m);
     sem_post(info->sems->sensors_controllers->mutex);
-    sem_post(info->sems->sensors_controllers->free_space);
+
+    if(m->m_id == -1){
+        sem_post(info->sems->sensors_controllers->unread);
+        usleep(1000);
+    }
+    else{
+        sem_post(info->sems->sensors_controllers->free_space);
+    }
 }
 
 void controller_process_measurement(MeasurementInfo *m, int controller_id, struct info_container *info){
@@ -63,5 +71,9 @@ void controller_send_measurement(MeasurementInfo *m, struct info_container *info
     write_controller_servers_buffer(buffs->buff_controllers_servers, info->buffers_size, m);
     sem_post(info->sems->controllers_servers->mutex);
     sem_post(info->sems->controllers_servers->unread);
+
+    for(int i = 0; i < info->n_servers; i++){
+        sem_post(info->sems->controllers_servers->unread);
+    }
 
 }

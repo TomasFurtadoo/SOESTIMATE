@@ -10,6 +10,7 @@ Tomas Furtado - 63772
 #include "memory.h"
 #include "random_measurement.h"
 #include <semaphore.h>
+#include <unistd.h>
 
 
 int execute_sensor(int sensor_id, struct info_container *info, struct buffers *buffs){
@@ -45,6 +46,12 @@ void sensor_receive_request(MeasurementInfo *req, int expected_m_id, struct info
     sem_wait(info->sems->main_sensors->mutex);
     read_main_sensors_buffer(buffs->buff_main_sensors, info->buffers_size, expected_m_id, req);
     sem_post(info->sems->main_sensors->mutex);
+
+    if(req->m_id == -1){
+        sem_post(info->sems->main_sensors->unread);
+        usleep(1000);
+        return;
+    }
 
     if(req->m_id != -1 && req->counter_sensors == 0) {
         sem_post(info->sems->main_sensors->free_space);

@@ -1,15 +1,15 @@
 ===== FINAL STATISTICS =====
-Main PID: 52276
+Main PID: 56559
 n_sensors=2, n_servers=2, buffers_size=10
 total_measurements=3
 Sensors:
- Sensor 0 (PID 52277): generated=4
- Sensor 1 (PID 52279): generated=4
+ Sensor 0 (PID 56560): generated=4
+ Sensor 1 (PID 56562): generated=4
 Controllers:
-controller=0 pid=52278
-controller=1 pid=52280
+controller=0 pid=56561
+controller=1 pid=56563
 Servers:
- Server 0 (PID 52281): estimates=0
- Server 1 (PID 52282): estimates=1
-Last logged ID: 1
+ Server 0 (PID 56564): estimates=3
+ Server 1 (PID 56565): estimates=3
+Last logged ID: 3
 ============================
