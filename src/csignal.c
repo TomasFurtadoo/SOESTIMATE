@@ -3,6 +3,8 @@
 #include "csignal.h"
 #include <signal.h>
 #include "ctime.h"
+#include <stdio.h>
+#include <unistd.h>
 
 static void sigint_handler(int signum){
     end_execution(info, buffs);

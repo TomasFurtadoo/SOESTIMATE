@@ -15,6 +15,8 @@ Tomas Furtado - 63772
 #include "csettings.h"
 #include "synchronization.h"
 #include "csignal.h"
+#include "cstats.h"
+#include "clog.h"
 
 struct info_container *info = NULL;
 struct buffers *buffs = NULL;
@@ -62,6 +64,8 @@ void create_shared_memory_structs(struct info_container *info, struct buffers *b
     buffs->buff_controllers_servers->ptrs   = (int*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, info->n_sensors * sizeof(int));
     buffs->buff_controllers_servers->buffer = (MeasurementInfo*) create_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
 
+    info->last_logged_id = (int*) create_shared_memory(ID_SHM_LAST_LOGGED_ID, sizeof(int));
+
 }
 
 void destroy_dynamic_memory_structs(struct info_container *info, struct buffers *buffs){
@@ -91,6 +95,8 @@ void destroy_shared_memory_structs(struct info_container *info, struct buffers *
 
     destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_LATEST, buffs->buff_controllers_servers->ptrs, info->n_sensors * sizeof(int));
     destroy_shared_memory(ID_SHM_CONTROLLERS_SERVERS_VERSION, buffs->buff_controllers_servers->buffer, info->n_sensors * info->buffers_size * sizeof(MeasurementInfo));
+
+    destroy_shared_memory(ID_SHM_LAST_LOGGED_ID, info->last_logged_id, sizeof(int));
 }
 
 void create_processes(struct info_container *info, struct buffers *buffs){
@@ -114,10 +120,22 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
 
     int current_m_id = 1; 
 
+    int print_prompt = 1;
+
     while(!*info->terminate){
-        printf("SOestimate> ");
+        if(print_prompt){
+            printf("SOestimate> ");
+            fflush(stdout);
+        }
         
-        if (fgets(input, sizeof(input), stdin) == NULL) break;
+        if (fgets(input, sizeof(input), stdin) == NULL){
+            if(! *info->terminate) {
+                print_prompt = 0;
+                continue;
+            }
+            else break;
+        }
+        print_prompt = 1;
 
         int parsed_args = sscanf(input, "%255s %d", command, &arg);
 
@@ -129,6 +147,7 @@ void user_interaction(struct info_container *info, struct buffers *buffs){
                 req.state = REQUEST;
                 req.m_id = (*info->total_measurements) + 1; 
                 
+                req.change_time.main_time = get_current_time();
 
                 req.counter_sensors = info->n_sensors;
                 req.counter_servers = info->n_servers;
@@ -186,12 +205,17 @@ void write_final_statistics(struct info_container *info){
 }
 
 void end_execution(struct info_container *info, struct buffers *buffs){
+    static int alread_ending = 0;
+    if(alread_ending) return;
+    alread_ending = 1;
+
     *info->terminate = 1;
+
+    wakeup_processes(info);
 
     wait_processes(info);
 
-    write_final_statistics(info);
-
+    write_statistics(info);
 }
 
 void wait_processes(struct info_container *info){
@@ -212,8 +236,13 @@ void wait_processes(struct info_container *info){
 }
 
 void read_estimate(struct info_container *info, int m_id){
-    printf("[Main] Unimplemented command (P2-only).\n");
-
+    double estimate = read_j(m_id, info);
+    if(estimate != -1.0){
+        printf("Ronda %d: estimativa = %.4f\n", m_id, estimate);
+    }
+    else{
+        printf("A medição %d ainda nao foi concluida ou nao existe no log.\n", m_id);
+    }
 }
 
 void print_stat(struct info_container *info){
@@ -267,7 +296,8 @@ int main(int argc, char *argv[]){
 
 
     main_args(argc, argv, info);
-
+    clear_log(info);
+    clear_statistics(info);
 
     create_dynamic_memory_structs(info, buffs);
     create_shared_memory_structs(info, buffs);
@@ -281,8 +311,9 @@ int main(int argc, char *argv[]){
 
     user_interaction(info, buffs);
 
-
-    end_execution(info, buffs);
+    if(*info->terminate == 0){
+        end_execution(info, buffs);
+    }
 
  
     destroy_shared_memory_structs(info, buffs);

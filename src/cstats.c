@@ -7,7 +7,7 @@
 void clear_statistics(struct info_container *info){
     FILE *f = fopen(info->statistics_filename, "w");
     if (f){
-        close(f);
+        fclose(f);
     }
 
 }
