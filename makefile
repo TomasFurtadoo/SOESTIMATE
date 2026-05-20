@@ -17,6 +17,7 @@ obj/%.o: src/%.c
 
 clean:
 	rm -f obj/*.o *~
+	rm -f log.txt stats.txt
 
 cleanall: clean
 	rm -f $(BIN)
